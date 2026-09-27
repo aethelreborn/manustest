@@ -3,6 +3,7 @@ services:
     name: aethel-api
     runtime: node
     buildCommand: pnpm install --frozen-lockfile && pnpm build
+    preDeployCommand: pnpm db:push
     startCommand: pnpm start
     healthCheckPath: /health
     envVars:
