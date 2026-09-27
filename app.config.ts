@@ -4,7 +4,7 @@ import type { ExpoConfig } from "expo/config";
 const config: ExpoConfig = {
   name: "Aethel",
   slug: "aethel",
-  version: "1.1.0",
+  version: "1.1.1",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
   scheme: "aethel",
@@ -16,6 +16,11 @@ const config: ExpoConfig = {
   web: { bundler: "metro", output: "static", favicon: "./assets/images/favicon.png" },
   plugins: [
     "expo-router",
+    "expo-asset",
+    "expo-font",
+    "expo-web-browser",
+    ["expo-audio", { microphonePermission: "Allow Aethel to access your microphone." }],
+    ["expo-video", { supportsBackgroundPlayback: true, supportsPictureInPicture: true }],
     ["expo-local-authentication", { faceIDPermission: "Allow Aethel to use Face ID to protect your vault." }],
     ["expo-splash-screen", { image: "./assets/images/splash-icon.png", imageWidth: 200, resizeMode: "contain", backgroundColor: "#FAFAF9" }],
     ["expo-build-properties", { android: { buildArchs: ["armeabi-v7a", "arm64-v8a"], minSdkVersion: 24 } }],
