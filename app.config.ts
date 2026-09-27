@@ -4,7 +4,7 @@ import type { ExpoConfig } from "expo/config";
 const config: ExpoConfig = {
   name: "Aethel",
   slug: "aethel",
-  version: "1.1.1",
+  version: "1.1.2",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
   scheme: "aethel",
