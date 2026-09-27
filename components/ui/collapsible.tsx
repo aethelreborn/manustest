@@ -1,30 +1,12 @@
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { PropsWithChildren, useState } from "react";
-import { Text, TouchableOpacity, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
 
-export function Collapsible({ children, title }: PropsWithChildren & { title: string }) {
-  const [isOpen, setIsOpen] = useState(false);
+export function Collapsible({ title, children }: PropsWithChildren<{ title: string }>) {
   const colors = useColors();
-
-  return (
-    <View className="bg-background">
-      <TouchableOpacity
-        className="flex-row items-center gap-1.5"
-        onPress={() => setIsOpen((value) => !value)}
-        activeOpacity={0.8}
-      >
-        <IconSymbol
-          name="chevron.right"
-          size={18}
-          weight="medium"
-          color={colors.icon}
-          style={{ transform: [{ rotate: isOpen ? "90deg" : "0deg" }] }}
-        />
-        <Text className="text-base font-semibold text-foreground">{title}</Text>
-      </TouchableOpacity>
-      {isOpen && <View className="mt-1.5 ml-6">{children}</View>}
-    </View>
-  );
+  const [open, setOpen] = useState(false);
+  return <View style={styles.wrapper}><Pressable onPress={() => setOpen((value) => !value)} style={styles.header}><Text style={[styles.title, { color: colors.foreground }]}>{title}</Text><MaterialIcons name={open ? "keyboard-arrow-up" : "keyboard-arrow-down"} size={21} color={colors.muted} /></Pressable>{open && <View style={styles.body}>{children}</View>}</View>;
 }
+const styles = StyleSheet.create({ wrapper: { gap: 8 }, header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" }, title: { fontSize: 15, fontWeight: "700" }, body: { paddingTop: 4 } });
