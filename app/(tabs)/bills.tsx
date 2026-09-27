@@ -18,14 +18,14 @@ export default function BillsScreen() {
   const [showAdd, setShowAdd] = useState(false);
   const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
-  const [dueDate, setDueDate] = useState("2026-10-01");
+  const [dueDate, setDueDate] = useState("");
   const filtered = useMemo(() => filterBills(bills, filter), [bills, filter]);
   const total = getActiveBillTotal(bills);
   const saveBill = () => {
     const numericAmount = Number(amount);
     if (!title.trim() || !numericAmount || !dueDate.trim()) return;
     addBill({ title: title.trim(), amount: numericAmount, dueDate: dueDate.trim(), cadence: "Monthly" });
-    setTitle(""); setAmount(""); setDueDate("2026-10-01"); setShowAdd(false);
+    setTitle(""); setAmount(""); setDueDate(""); setShowAdd(false);
   };
   return <ScreenContainer><View style={styles.page}><View style={styles.header}><View><Text style={[styles.eyebrow, { color: colors.warning }]}>PLAN AHEAD</Text><Text style={[styles.title, { color: colors.foreground }]}>Bills</Text></View><Pressable onPress={() => setShowAdd(true)} style={[styles.addButton, { backgroundColor: colors.primary }]}><MaterialIcons name="add" size={22} color="#FFFFFF" /></Pressable></View><View style={[styles.summary, { backgroundColor: colors.surface, borderColor: colors.border }]}><View><Text style={[styles.summaryLabel, { color: colors.muted }]}>ACTIVE COMMITMENTS</Text><Text style={[styles.summaryAmount, { color: colors.foreground }]}>{currency.format(total)}</Text></View><View style={[styles.summaryIcon, { backgroundColor: `${colors.warning}18` }]}><MaterialIcons name="event" size={22} color={colors.warning} /></View></View><SectionHeading title="Your reminders" /><View style={styles.tabs}>{(["all", "upcoming", "paid"] as BillFilter[]).map((item) => <Pressable key={item} onPress={() => setFilter(item)} style={[styles.tab, { backgroundColor: filter === item ? colors.foreground : colors.inkSoft }]}><Text style={[styles.tabText, { color: filter === item ? colors.surface : colors.muted }]}>{item === "all" ? "All" : item === "upcoming" ? "Upcoming" : "Paid"}</Text></Pressable>)}</View><FlatList data={filtered} keyExtractor={(item) => item.id} contentContainerStyle={styles.list} showsVerticalScrollIndicator={false} renderItem={({ item }) => <BillCard bill={item} onPaid={() => markBillPaid(item.id)} />} ListEmptyComponent={<View style={[styles.empty, { backgroundColor: colors.surface, borderColor: colors.border }]}><MaterialIcons name="event-available" size={28} color={colors.success} /><Text style={[styles.emptyTitle, { color: colors.foreground }]}>Nothing here</Text><Text style={[styles.emptyBody, { color: colors.muted }]}>A clear list is useful. Add a bill when a commitment needs a reminder.</Text><AethelButton onPress={() => setShowAdd(true)} icon="add">Add a bill</AethelButton></View>} /><AddBillModal visible={showAdd} title={title} amount={amount} dueDate={dueDate} onClose={() => setShowAdd(false)} onTitle={setTitle} onAmount={setAmount} onDueDate={setDueDate} onSave={saveBill} /></View></ScreenContainer>;
 }

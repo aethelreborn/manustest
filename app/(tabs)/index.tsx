@@ -9,6 +9,7 @@ import { useColors } from "@/hooks/use-colors";
 import { useAethel } from "@/lib/aethel-store";
 
 const currency = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
+const todayLabel = new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric" }).format(new Date()).toUpperCase();
 
 export default function HomeScreen() {
   const colors = useColors();
@@ -29,7 +30,7 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.greeting}>
-          <Text style={[styles.kicker, { color: colors.primary }]}>SUNDAY, SEPTEMBER 27</Text>
+          <Text style={[styles.kicker, { color: colors.primary }]}>{todayLabel}</Text>
           <Text style={[styles.title, { color: colors.foreground }]}>A quieter day{`\n`}starts here.</Text>
           <Text style={[styles.subtitle, { color: colors.muted }]}>Your essentials, kept close and in context.</Text>
         </View>
