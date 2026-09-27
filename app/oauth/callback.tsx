@@ -53,7 +53,7 @@ export default function OAuthCallback() {
                 lastSignedIn: new Date(userData.lastSignedIn || Date.now()),
               };
               await Auth.setUserInfo(userInfo);
-              console.log("[OAuth] User info stored:", userInfo);
+              console.log("[OAuth] User info stored");
             } catch (err) {
               console.error("[OAuth] Failed to parse user data:", err);
             }
@@ -119,8 +119,8 @@ export default function OAuthCallback() {
             state = urlObj.searchParams.get("state");
             sessionToken = urlObj.searchParams.get("sessionToken");
             console.log("[OAuth] Extracted from URL:", {
-              code: code?.substring(0, 20) + "...",
-              state: state?.substring(0, 20) + "...",
+              hasCode: Boolean(code),
+              hasState: Boolean(state),
               sessionToken: sessionToken ? "present" : "missing",
             });
           } catch (e) {
@@ -135,9 +135,9 @@ export default function OAuthCallback() {
                 if (key === "sessionToken") sessionToken = decodeURIComponent(value);
               });
               console.log("[OAuth] Extracted from regex:", {
-                code: code?.substring(0, 20) + "...",
-                state: state?.substring(0, 20) + "...",
-                sessionToken: sessionToken ? "present" : "missing",
+                hasCode: Boolean(code),
+                hasState: Boolean(state),
+                hasSessionToken: Boolean(sessionToken),
               });
             }
           }
@@ -177,8 +177,8 @@ export default function OAuthCallback() {
 
         // Exchange code for session token
         console.log("[OAuth] Exchanging code for session token...", {
-          code: code.substring(0, 20) + "...",
-          state: state.substring(0, 20) + "...",
+          hasCode: Boolean(code),
+          hasState: Boolean(state),
         });
         const result = await Api.exchangeOAuthCode(code, state);
         console.log("[OAuth] Exchange result:", {
@@ -194,7 +194,7 @@ export default function OAuthCallback() {
 
           // Store user info if available
           if (result.user) {
-            console.log("[OAuth] User data received:", result.user);
+            console.log("[OAuth] User data received");
             const userInfo: Auth.User = {
               id: result.user.id,
               openId: result.user.openId,
@@ -204,7 +204,7 @@ export default function OAuthCallback() {
               lastSignedIn: new Date(result.user.lastSignedIn || Date.now()),
             };
             await Auth.setUserInfo(userInfo);
-            console.log("[OAuth] User info stored:", userInfo);
+            console.log("[OAuth] User info stored");
           } else {
             console.log("[OAuth] No user data in result");
           }

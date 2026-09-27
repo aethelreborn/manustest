@@ -9,9 +9,16 @@ Aethel combines three everyday tools into one chronological home view:
 - **Focus** — quick-start focus blocks with a live countdown and optional app-blocking permission language.
 - **Settings** — biometric, reminder, quiet-hours, encrypted export, and local-data controls.
 
-## Product direction
+## Architecture milestone
 
-The app follows the Aethel design system: calm authority, muted teal, clear urgency colors, comfortable 15sp+ text, and first-class light/dark palette tokens. Starter content is stored locally so the preview immediately communicates the product; all user changes persist with AsyncStorage.
+The app is local-first but now has the production seams for account sync:
+
+- **Auth:** Manus OAuth entry screen, native bearer sessions in `expo-secure-store`, web cookie auth, callback routing, and logout.
+- **Encryption:** Argon2id key derivation, AES-256-GCM payload encryption, device key storage, and encrypted AsyncStorage snapshots. The API receives vault ciphertext and IV only.
+- **Biometrics:** `expo-local-authentication` gates every vault reveal and copy action on native builds; the web preview uses a safe development fallback.
+- **Database:** Drizzle tables for `vault_items` and `billing_items`, plus generated migration `drizzle/0001_overjoyed_network.sql`.
+- **API:** Protected tRPC list/create/update/delete procedures with user ownership predicates for vault and billing records.
+- **Sync:** Local writes remain available offline and opportunistically sync encrypted vault records and billing records when an authenticated API is available.
 
 ## Run locally
 
@@ -28,10 +35,11 @@ The Expo preview runs in a browser for fast review and can also be opened in Exp
 pnpm check
 pnpm lint
 pnpm test -- --run
+pnpm build
 ```
 
-Unit coverage lives in `tests/aethel-utils.test.ts` and covers active bill totals, bill filters, and safe focus-time formatting.
+Unit coverage includes bill/focus helpers and crypto round-trips/tamper rejection in `tests/`.
 
-## Notes
+## Before app-store release
 
-This repository contains the mobile product surface and local-first state layer. Production-grade zero-knowledge encryption, biometric prompts, native app blocking entitlements, and remote sync should be connected behind the existing affordances before shipping to app stores.
+The remaining release work is intentionally explicit: connect the production Manus OAuth environment variables, add the onboarding flow for a user-chosen master password and recovery policy, implement encrypted export/re-key/delete confirmation, register push notifications and due-date jobs, and add native iOS/Android focus-blocking entitlements. These are not represented as fake client-side success states.
