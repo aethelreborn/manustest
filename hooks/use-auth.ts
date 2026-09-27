@@ -1,38 +1,20 @@
-import * as Api from "@/lib/_core/api";
-import * as Auth from "@/lib/_core/auth";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Platform } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import { createTRPCClient } from "@/lib/trpc";
+import { signOutFirebase, useFirebaseUser } from "@/lib/firebase-auth";
 
-type UseAuthOptions = { autoFetch?: boolean };
-
-export function useAuth(options?: UseAuthOptions) {
-  const { autoFetch = true } = options ?? {};
-  const [user, setUser] = useState<Auth.User | null>(null);
+export type AppUser = { id: number; openId: string; name: string | null; email: string | null; loginMethod: string | null; lastSignedIn: Date };
+export function useAuth() {
+  const firebaseUser = useFirebaseUser();
+  const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-
-  const fetchUser = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      if (Platform.OS === "web") {
-        const apiUser = await Api.getMe();
-        if (!apiUser) { setUser(null); await Auth.clearUserInfo(); return; }
-        const userInfo: Auth.User = { id: apiUser.id, openId: apiUser.openId, name: apiUser.name, email: apiUser.email, loginMethod: apiUser.loginMethod, lastSignedIn: new Date(apiUser.lastSignedIn) };
-        setUser(userInfo);
-        await Auth.setUserInfo(userInfo);
-        return;
-      }
-      const token = await Auth.getSessionToken();
-      const cachedUser = await Auth.getUserInfo();
-      if (token && cachedUser) setUser(cachedUser);
-      else setUser(null);
-    } catch (err) { setError(err instanceof Error ? err : new Error("Failed to fetch user")); setUser(null); } finally { setLoading(false); }
-  }, []);
-
-  const logout = useCallback(async () => { try { await Api.logout(); } catch { /* local logout still clears the session */ } finally { await Auth.removeSessionToken(); await Auth.clearUserInfo(); setUser(null); setError(null); } }, []);
-  const isAuthenticated = useMemo(() => Boolean(user), [user]);
-
-  useEffect(() => { if (!autoFetch) { setLoading(false); return; } void fetchUser(); }, [autoFetch, fetchUser]);
-  return { user, loading, error, isAuthenticated, refresh: fetchUser, logout };
+  useEffect(() => {
+    let active = true;
+    if (!firebaseUser) { setUser(null); setLoading(false); return () => { active = false; }; }
+    setLoading(true);
+    void createTRPCClient().auth.me.query().then((sqlUser) => { if (active) setUser(sqlUser ? { ...sqlUser, lastSignedIn: new Date(sqlUser.lastSignedIn) } : null); }).catch((reason) => { if (active) { setError(reason instanceof Error ? reason : new Error("Failed to load account")); setUser(null); } }).finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [firebaseUser]);
+  const logout = useCallback(async () => { await signOutFirebase(); setUser(null); }, []);
+  return { user, loading, error, isAuthenticated: Boolean(firebaseUser && user), refresh: () => undefined, logout };
 }
