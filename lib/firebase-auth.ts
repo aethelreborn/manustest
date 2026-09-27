@@ -33,7 +33,7 @@ export function useGoogleSignIn() {
   const [request, response, promptAsync] = useAuthRequest({ clientId: firebaseGoogleWebClientId, redirectUri: makeRedirectUri({ scheme: "aethel" }), responseType: ResponseType.IdToken, scopes: ["openid", "profile", "email"] }, discovery);
   const [error, setError] = useState<Error | null>(null);
   useEffect(() => { if (response?.type !== "success") return; const idToken = response.authentication?.idToken ?? response.params?.id_token; if (!idToken) { setError(new Error("Google did not return an ID token")); return; } void signInWithCredential(firebaseAuth, GoogleAuthProvider.credential(idToken)).then((credential) => persistNativeSession(credential.user)).catch((reason) => setError(reason instanceof Error ? reason : new Error("Firebase sign-in failed"))); }, [response]);
-  const signIn = useCallback(async () => { setError(null); if (Platform.OS === "web") { await signInWithGoogleWeb(); return; } if (!firebaseGoogleWebClientId) throw new Error("Set EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID for native Google sign-in"); await promptAsync(); }, [promptAsync]);
+  const signIn = useCallback(async () => { setError(null); try { if (Platform.OS === "web") { await signInWithGoogleWeb(); return; } if (!firebaseGoogleWebClientId) throw new Error("Set EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID for native Google sign-in"); await promptAsync(); } catch (reason) { const nextError = reason instanceof Error ? reason : new Error("Google sign-in failed"); setError(nextError); throw nextError; } }, [promptAsync]);
   return { request, response, signIn, error };
 }
 

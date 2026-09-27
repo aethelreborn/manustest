@@ -56,9 +56,11 @@ async function startServer() {
 
   registerStorageProxy(app);
 
-  app.get("/api/health", (_req, res) => {
+  const health = (_req: express.Request, res: express.Response) => {
     res.json({ ok: true, timestamp: Date.now() });
-  });
+  };
+  app.get("/health", health);
+  app.get("/api/health", health);
 
   app.use(
     "/api/trpc",
