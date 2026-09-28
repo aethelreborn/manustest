@@ -11,7 +11,7 @@ export type BillStatus = "upcoming" | "overdue" | "paid";
 export type BillItem = { id: string; title: string; amount: number; dueDate: string; cadence: "Monthly" | "Yearly" | "One-time"; status: BillStatus };
 type FocusState = { active: boolean; label: string; remainingSeconds: number };
 type PersistedState = { vault: VaultItem[]; bills: BillItem[]; focus: FocusState };
-type AethelContextValue = PersistedState & { hydrated: boolean; addVaultItem: (item: Omit<VaultItem, "id">) => void; removeVaultItem: (id: string) => void; addBill: (item: Omit<BillItem, "id" | "status">) => void; markBillPaid: (id: string) => void; startFocus: (minutes: number, label?: string) => void; tickFocus: () => void; endFocus: () => void };
+type AethelContextValue = PersistedState & { hydrated: boolean; addVaultItem: (item: Omit<VaultItem, "id">) => void; removeVaultItem: (id: string) => void; addBill: (item: Omit<BillItem, "id" | "status">) => void; markBillPaid: (id: string) => void; startFocus: (minutes: number, label?: string) => void; tickFocus: () => void; endFocus: () => void; clearLocalData: () => Promise<void> };
 
 const emptyFocus: FocusState = { active: false, label: "Deep work", remainingSeconds: 25 * 60 };
 const AethelContext = createContext<AethelContextValue | null>(null);
@@ -68,7 +68,8 @@ export function AethelProvider({ children }: { children: React.ReactNode }) {
   const startFocus = useCallback((minutes: number, label = "Deep work") => setFocus({ active: true, label, remainingSeconds: minutes * 60 }), []);
   const tickFocus = useCallback(() => setFocus((current) => current.remainingSeconds <= 1 ? { ...current, active: false, remainingSeconds: 0 } : current.active ? { ...current, remainingSeconds: current.remainingSeconds - 1 } : current), []);
   const endFocus = useCallback(() => setFocus((current) => ({ ...current, active: false })), []);
-  const value = useMemo(() => ({ hydrated, vault, bills, focus, addVaultItem, removeVaultItem, addBill, markBillPaid, startFocus, tickFocus, endFocus }), [addBill, addVaultItem, bills, endFocus, focus, hydrated, markBillPaid, removeVaultItem, startFocus, tickFocus, vault]);
+  const clearLocalData = useCallback(async () => { setVault([]); setBills([]); setFocus(emptyFocus); await saveEncryptedState({ vault: [], bills: [], focus: emptyFocus }, scope); }, [scope]);
+  const value = useMemo(() => ({ hydrated, vault, bills, focus, addVaultItem, removeVaultItem, addBill, markBillPaid, startFocus, tickFocus, endFocus, clearLocalData }), [addBill, addVaultItem, bills, clearLocalData, endFocus, focus, hydrated, markBillPaid, removeVaultItem, startFocus, tickFocus, vault]);
   return <AethelContext.Provider value={value}>{children}</AethelContext.Provider>;
 }
 function localItemToRemoteBill(item: BillItem) { return { title: item.title, amount: item.amount, currency: "INR", dueDate: item.dueDate, cadence: item.cadence, status: item.status }; }

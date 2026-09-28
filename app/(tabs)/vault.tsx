@@ -2,11 +2,13 @@ import * as Clipboard from "expo-clipboard";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import React, { useMemo, useState } from "react";
 import { Alert, FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { useRouter } from "expo-router";
 
 import { AethelButton } from "@/components/aethel-ui";
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
 import { useAethel, type VaultItem, type VaultKind } from "@/lib/aethel-store";
+import { useAethelPreferences } from "@/lib/aethel-preferences";
 import { authenticateBiometric } from "@/lib/aethel-crypto";
 
 const filters: ("all" | VaultKind)[] = ["all", "password", "card", "note"];
@@ -14,7 +16,9 @@ const filterLabels = { all: "All", password: "Passwords", card: "Cards", note: "
 
 export default function VaultScreen() {
   const colors = useColors();
+  const router = useRouter();
   const { vault, addVaultItem, removeVaultItem } = useAethel();
+  const { biometricEnabled } = useAethelPreferences();
   const [filter, setFilter] = useState<(typeof filters)[number]>("all");
   const [revealed, setRevealed] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
@@ -24,8 +28,9 @@ export default function VaultScreen() {
   const [kind, setKind] = useState<VaultKind>("password");
   const data = useMemo(() => filter === "all" ? vault : vault.filter((item) => item.kind === filter), [filter, vault]);
   const handleAdd = () => { if (!title.trim() || !secret.trim()) return; addVaultItem({ title: title.trim(), username: username.trim(), secret: secret.trim(), kind }); setTitle(""); setUsername(""); setSecret(""); setShowAdd(false); };
-  const handleCopy = async (item: VaultItem) => { if (!item.secret) return; const approved = await authenticateBiometric("Copy protected secret"); if (!approved) { Alert.alert("Biometric check required", "Aethel did not reveal or copy this protected value."); return; } await Clipboard.setStringAsync(item.secret); Alert.alert("Copied securely", "This value will be cleared from your clipboard after 60 seconds in the full native build."); };
-  const handleReveal = async (id: string) => { if (revealed === id) { setRevealed(null); return; } const approved = await authenticateBiometric("Reveal protected secret"); if (approved) setRevealed(id); else Alert.alert("Biometric check required", "Aethel did not reveal this protected value."); };
+  const requireBiometric = async (prompt: string) => { if (!biometricEnabled) { Alert.alert("Turn on biometric unlock first", "Aethel never assumes you want biometric protection. Enable it in Settings before revealing a secret.", [{ text: "Not now" }, { text: "Open Settings", onPress: () => router.push("/settings") }]); return false; } return authenticateBiometric(prompt); };
+  const handleCopy = async (item: VaultItem) => { if (!item.secret) return; const approved = await requireBiometric("Copy protected secret"); if (!approved) { Alert.alert("Biometric check required", "Aethel did not reveal or copy this protected value."); return; } await Clipboard.setStringAsync(item.secret); Alert.alert("Copied securely", "The protected value was copied after biometric approval."); };
+  const handleReveal = async (id: string) => { if (revealed === id) { setRevealed(null); return; } const approved = await requireBiometric("Reveal protected secret"); if (approved) setRevealed(id); else Alert.alert("Biometric check required", "Aethel did not reveal this protected value."); };
   const handleDelete = (item: VaultItem) => Alert.alert("Delete item?", `${item.title} will be removed from this device.`, [{ text: "Keep" }, { text: "Delete", style: "destructive", onPress: () => removeVaultItem(item.id) }]);
   return <ScreenContainer><View style={styles.page}><View style={styles.header}><View><Text style={[styles.eyebrow, { color: colors.primary }]}>PRIVATE BY DEFAULT</Text><Text style={[styles.title, { color: colors.foreground }]}>Vault</Text></View><Pressable onPress={() => setShowAdd(true)} style={[styles.addButton, { backgroundColor: colors.primary }]} accessibilityLabel="Add vault item"><MaterialIcons name="add" color="#FFFFFF" size={22} /></Pressable></View><Text style={[styles.subtitle, { color: colors.muted }]}>Your labels stay searchable. Your secrets stay yours.</Text><View style={styles.filters}>{filters.map((item) => <Pressable key={item} onPress={() => setFilter(item)} style={[styles.filter, { borderColor: filter === item ? colors.primary : colors.border, backgroundColor: filter === item ? `${colors.primary}18` : colors.surface }]}><Text style={[styles.filterText, { color: filter === item ? colors.primary : colors.muted }]}>{filterLabels[item]}</Text></Pressable>)}</View><FlatList data={data} keyExtractor={(item) => item.id} contentContainerStyle={styles.list} showsVerticalScrollIndicator={false} renderItem={({ item }) => <VaultCard item={item} isRevealed={revealed === item.id} onReveal={() => handleReveal(item.id)} onCopy={() => handleCopy(item)} onDelete={() => handleDelete(item)} />} ListEmptyComponent={<View style={[styles.empty, { backgroundColor: colors.surface, borderColor: colors.border }]}><MaterialIcons name="lock-open" size={26} color={colors.primary} /><Text style={[styles.emptyTitle, { color: colors.foreground }]}>Your vault is ready</Text><Text style={[styles.emptyBody, { color: colors.muted }]}>Add your first protected item. Secrets are stored locally on this device.</Text><AethelButton onPress={() => setShowAdd(true)} icon="add">Add an item</AethelButton></View>} /><AddVaultModal visible={showAdd} kind={kind} title={title} username={username} secret={secret} onClose={() => setShowAdd(false)} onKind={setKind} onTitle={setTitle} onUsername={setUsername} onSecret={setSecret} onSave={handleAdd} /></View></ScreenContainer>;
 }

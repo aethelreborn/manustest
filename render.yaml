@@ -2,6 +2,7 @@ services:
   - type: web
     name: aethel-api
     runtime: node
+    plan: free
     buildCommand: pnpm install --frozen-lockfile && pnpm build
     preDeployCommand: pnpm db:push
     startCommand: pnpm start

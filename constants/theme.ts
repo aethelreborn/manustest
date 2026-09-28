@@ -2,12 +2,7 @@ import { Platform } from "react-native";
 export type ColorScheme = "light" | "dark";
 export type ThemeColorPalette = { background: string; surface: string; foreground: string; muted: string; primary: string; border: string; success: string; warning: string; error: string; info: string; inkSoft: string; accentSoft: string; tint: string; icon: string; tabIconDefault: string; tabIconSelected: string };
 export const Colors: Record<ColorScheme, ThemeColorPalette> = {
-  light: { background: "#F4F5F1", surface: "#FFFFFF", foreground: "#102321", muted: "#667572", primary: "#175B55", border: "#DCE5E0", success: "#2D8A67", warning: "#C78225", error: "#C94A4A", info: "#3F6FBF", inkSoft: "#E6F0EC", accentSoft: "#D7ECE6", tint: "#175B55", icon: "#667572", tabIconDefault: "#93A49F", tabIconSelected: "#175B55" },
-  dark: { background: "#0B1112", surface: "#132022", foreground: "#F2F7F4", muted: "#A6B8B3", primary: "#78D2C3", border: "#2A3D3D", success: "#74D2A6", warning: "#F0BD69", error: "#F07D7D", info: "#87A9F0", inkSoft: "#1B3130", accentSoft: "#193A37", tint: "#78D2C3", icon: "#A6B8B3", tabIconDefault: "#718783", tabIconSelected: "#78D2C3" },
+  light: { background: "#F6F2EA", surface: "#FFFDF8", foreground: "#1E1B2E", muted: "#77727E", primary: "#5B4B8A", border: "#E6DED2", success: "#3D8067", warning: "#C47D32", error: "#B95050", info: "#4D71A8", inkSoft: "#EFE8F7", accentSoft: "#E7E0F2", tint: "#5B4B8A", icon: "#77727E", tabIconDefault: "#9B93A4", tabIconSelected: "#5B4B8A" },
+  dark: { background: "#12111A", surface: "#1D1A29", foreground: "#F9F7FF", muted: "#B9B1C8", primary: "#C9B8FF", border: "#3A3348", success: "#83D2AE", warning: "#F1BF78", error: "#F39A9A", info: "#9CB9F0", inkSoft: "#2B253A", accentSoft: "#302844", tint: "#C9B8FF", icon: "#B9B1C8", tabIconDefault: "#81788E", tabIconSelected: "#C9B8FF" },
 };
-export const Fonts = Platform.select({
-  ios: { sans: "Avenir Next", rounded: "Avenir Next", mono: "Menlo", display: "Avenir Next" },
-  android: { sans: "sans-serif", rounded: "sans-serif", mono: "monospace", display: "sans-serif" },
-  default: { sans: "sans-serif", rounded: "sans-serif", mono: "monospace", display: "sans-serif" },
-  web: { sans: "Georgia", rounded: "Georgia", mono: "ui-monospace", display: "Georgia" },
-});
+export const Fonts = Platform.select({ ios: { display: "Avenir Next", body: "Avenir Next", mono: "Menlo" }, android: { display: "sans-serif-condensed", body: "sans-serif", mono: "monospace" }, web: { display: "ui-rounded", body: "system-ui", mono: "ui-monospace" }, default: { display: "sans-serif-condensed", body: "sans-serif", mono: "monospace" } });

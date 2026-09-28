@@ -1,28 +1,37 @@
 # Aethel
 
-A calm, privacy-first mobile command center for passwords, subscriptions, and focused time.
+Aethel is a consent-first, privacy-focused mobile command center for passwords, bills, and focused time.
 
-Aethel combines three everyday tools into one chronological home view:
+## Product flows
 
-- **Vault** — protected passwords, cards, and private notes with reveal/copy affordances.
-- **Bills** — upcoming, overdue, and paid reminders with local add and mark-paid flows.
-- **Focus** — quick-start focus blocks with a live countdown and optional app-blocking permission language.
-- **Settings** — biometric, reminder, quiet-hours, encrypted export, and local-data controls.
-- **Welcome and consent** — first launch requires an explicit Terms and Privacy acknowledgement, then offers device biometric enrollment before the workspace opens.
+- **Welcome and consent** — first launch explains the product, requires separate Terms and Privacy acknowledgement, and offers biometric unlock as an explicit opt-in.
+- **Vault** — protected passwords, cards, and private notes with biometric-gated reveal and copy actions. No demo records are seeded.
+- **Bills** — user-created upcoming, overdue, and paid reminders with local add and mark-paid flows.
+- **Focus** — quick-start focus blocks with a live countdown and a clear end-session action.
+- **Settings** — persistent biometric, reminder, quiet-hours, consent-review, and local-data deletion controls.
+- **Legal and help** — in-app Terms of Service, Privacy Policy, and product/security documentation.
 
-## Architecture milestone
+## Architecture
 
-The app is local-first with Firebase Google Auth and SQL-backed sync:
+Aethel is local-first with optional Firebase Google Auth and SQL-backed sync:
 
-- **Auth:** Firebase Authentication with Google provider, an in-app browser auth session on native, Firebase popup auth on web, Firebase ID tokens in bearer headers, and secure Firebase session persistence. Configure `EXPO_PUBLIC_API_BASE_URL` to point the app at the deployed API.
-- **SQL identity mapping:** the server verifies Firebase ID tokens with Google public keys, maps `firebase:<uid>` to the existing SQL `users` table, and uses that SQL user id for ownership checks.
+- **Auth:** Firebase Authentication with Google. Web uses Firebase popup auth; native uses an explicit in-app browser session and the `aethel://oauth/callback` deep link. Firebase ID tokens are sent as bearer headers.
+- **SQL identity mapping:** the server verifies Firebase ID tokens with Google public keys, maps `firebase:<uid>` to the SQL `users` table, and applies ownership checks to vault and billing queries.
 - **Encryption:** Argon2id key derivation, AES-256-GCM payload encryption, device key storage, and encrypted AsyncStorage snapshots. The API receives vault ciphertext and IV only.
-- **Biometrics:** first launch checks actual hardware/enrollment and offers a real Face ID/fingerprint prompt. `expo-local-authentication` gates every vault reveal and copy action on native builds; the web preview uses a safe development fallback.
-- **Database:** Drizzle tables for `vault_items` and `billing_items`, plus generated migration `drizzle/0001_overjoyed_network.sql`.
-- **API:** Protected tRPC list/create/update/delete procedures with user ownership predicates for vault and billing records. `GET /health` and `GET /api/health` return a Render-compatible health response.
-- **Sync:** Local writes remain available offline and opportunistically sync encrypted vault records and billing records when Firebase Auth is active.
+- **Biometrics:** `expo-local-authentication` is never enabled silently. The user must opt in during onboarding or Settings and confirm a real device biometric prompt before vault reveal/copy is allowed.
+- **Database:** Drizzle tables for `vault_items` and `billing_items`, plus the generated migration in `drizzle/0001_overjoyed_network.sql`.
+- **API:** protected tRPC list/create/update/delete procedures with user ownership predicates for vault and billing records.
+- **Render:** `render.yaml` deploys the Node API with exact `PORT` binding. `GET /health` is the Render health check; `GET /api/health` remains available for diagnostics.
 
-Firebase project: `aethelreborn-de93f`.
+## Google browser auth setup
+
+The native browser flow returns to:
+
+```text
+aethel://oauth/callback
+```
+
+Add that URI to the Google OAuth client used by the app. If Google rejects the callback, Aethel shows the exact redirect URI that must be added. Set `EXPO_PUBLIC_API_BASE_URL` to the deployed Render URL for authenticated SQL sync; offline mode remains available without it.
 
 ## Run locally
 
@@ -42,30 +51,16 @@ pnpm test -- --run
 pnpm build
 ```
 
-The full test suite includes one release credential check. It requires `EXPO_TOKEN`; without that secret, product tests still run but `tests/eas-release.test.ts` reports the missing release credential.
+Coverage includes crypto round-trips/tamper rejection, account-isolated storage keys, Firebase configuration, Google browser callback parsing, and release credential checks.
 
-## Deploy the backend to Render
+## Companion website
 
-`render.yaml` defines the Node web service. The app uses MySQL (`drizzle-orm/mysql2`), so create a MySQL database with a provider such as Aiven, PlanetScale, or Railway and provide its connection string as `DATABASE_URL`; Render's native managed database is PostgreSQL and is not compatible with this schema. Create the service from that blueprint and provide `DATABASE_URL`, `VITE_APP_ID`, and `OAUTH_SERVER_URL` in Render. `JWT_SECRET` is generated by Render, and `preDeployCommand` runs the Drizzle migrations. Set `EXPO_PUBLIC_API_BASE_URL` in the Expo environment to the deployed service URL, for example `https://aethel-api.onrender.com`.
-
-Render uses `GET /health` for readiness and starts the bundled server with `pnpm start`.
-
-Unit coverage includes bill/focus helpers, crypto round-trips/tamper rejection, Firebase project configuration, and native Google client ID validation.
-
-## Before app-store release
-
-The remaining release work is intentionally explicit: add the onboarding flow for a user-chosen master password and recovery policy, implement encrypted export/re-key/delete confirmation, register push notifications and due-date jobs, add native iOS/Android focus-blocking entitlements, and configure the Firebase Android/iOS OAuth client IDs for store builds. These are not represented as fake client-side success states.
-
-## Build and release
-
-After setting `EXPO_TOKEN` and the Firebase native OAuth values, validate and build with:
+The public product site, documentation, privacy policy, and terms pages live in [`website/`](./website). Run it with:
 
 ```bash
-pnpm check
-pnpm lint
-pnpm test -- --run
-pnpm build
-npx eas build --platform all --profile production
+cd website && python3 -m http.server 4173
 ```
 
-The repository does not push or publish builds without an authenticated Git remote and Expo token.
+## Render deployment
+
+See [`RENDER.md`](./RENDER.md) and [`render.yaml`](./render.yaml). Render needs `DATABASE_URL`; Firebase token verification uses the public Firebase project ID and Google public keys.
